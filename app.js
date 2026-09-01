@@ -1,5 +1,4 @@
-const N8N_CALLBACK_URL = 'INSERIRE_WEBHOOK_N8N';
-
+const N8N_CALLBACK_URL = 'https://n8n.srv1172262.hstgr.cloud/webhook/whatsapp-embedded-result';
 const META_APP_ID = '4260497577614215';
 const META_CONFIGURATION_ID = '1719559519101385';
 const GRAPH_API_VERSION = 'v26.0';
