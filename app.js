@@ -2,6 +2,7 @@ const N8N_CALLBACK_URL = 'https://n8n.srv1172262.hstgr.cloud/webhook/whatsapp-em
 const META_APP_ID = '4260497577614215';
 const META_CONFIGURATION_ID = '1719559519101385';
 const GRAPH_API_VERSION = 'v26.0';
+const COEXISTENCE_FINISH_EVENT = 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING';
 
 const button = document.getElementById('connect-button');
 const statusElement = document.getElementById('status');
@@ -10,6 +11,8 @@ let authorizationCode;
 let sessionInfo;
 let onboardingFinished = false;
 let resultSent = false;
+let completionEvent;
+let completionVersion;
 
 function setStatus(message) {
   statusElement.textContent = message;
@@ -47,8 +50,12 @@ function buildPayload() {
   const payload = {
     source: 'meta_whatsapp_embedded_signup',
     status: 'success',
+    onboarding_type: 'coexistence',
+    event: completionEvent,
     code: authorizationCode
   };
+
+  if (completionVersion !== undefined) payload.version = completionVersion;
 
   if (sessionInfo && typeof sessionInfo === 'object') {
     if (sessionInfo.waba_id) payload.waba_id = sessionInfo.waba_id;
@@ -64,7 +71,7 @@ async function sendResultToN8n() {
   if (resultSent || !authorizationCode || !onboardingFinished) return;
 
   resultSent = true;
-  setStatus('Salvataggio configurazione...');
+  setStatus('Salvataggio configurazione Coexistence...');
 
   try {
     if (!N8N_CALLBACK_URL.startsWith('https://')) {
@@ -81,10 +88,10 @@ async function sendResultToN8n() {
       throw new Error('Risposta webhook non valida');
     }
 
-    setStatus('✅ WhatsApp collegato correttamente');
+    setStatus('✅ WhatsApp Coexistence collegato correttamente');
   } catch {
     resultSent = false;
-    setStatus('Il collegamento Meta è stato completato, ma non siamo riusciti a salvare la configurazione.');
+    setStatus('Coexistence completato su Meta, ma non siamo riusciti a salvare la configurazione in n8n.');
   } finally {
     button.disabled = false;
   }
@@ -102,16 +109,19 @@ window.addEventListener('message', (event) => {
   const message = parseEmbeddedSignupMessage(event.data);
   if (!message || message.type !== 'WA_EMBEDDED_SIGNUP') return;
 
-  const finishEvents = new Set([
-    'FINISH',
-    'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING'
-  ]);
-
-  if (finishEvents.has(message.event)) {
+  if (message.event === COEXISTENCE_FINISH_EVENT) {
     onboardingFinished = true;
+    completionEvent = message.event;
+    completionVersion = message.version;
     sessionInfo = getSessionInfo(message);
-    setStatus('Configurazione WhatsApp completata. Salvataggio...');
+    setStatus('Coexistence completato. Salvataggio...');
     trySendCompletedResult();
+    return;
+  }
+
+  if (message.event === 'FINISH') {
+    setStatus('È terminato un flusso WhatsApp standard, non il Coexistence. Riprova scegliendo il collegamento dell’app WhatsApp Business esistente.');
+    button.disabled = false;
     return;
   }
 
@@ -151,6 +161,8 @@ button.addEventListener('click', () => {
   sessionInfo = undefined;
   onboardingFinished = false;
   resultSent = false;
+  completionEvent = undefined;
+  completionVersion = undefined;
 
   try {
     FB.login((response) => {
@@ -158,9 +170,9 @@ button.addEventListener('click', () => {
         authorizationCode = response.authResponse.code;
 
         if (onboardingFinished) {
-          setStatus('Configurazione WhatsApp completata. Salvataggio...');
+          setStatus('Coexistence completato. Salvataggio...');
         } else {
-          setStatus('Autorizzazione ricevuta. Completa la configurazione WhatsApp...');
+          setStatus('Autorizzazione ricevuta. Completa il collegamento della tua app WhatsApp Business...');
         }
 
         trySendCompletedResult();
@@ -173,6 +185,7 @@ button.addEventListener('click', () => {
       response_type: 'code',
       override_default_response_type: true,
       extras: {
+        setup: {},
         featureType: 'whatsapp_business_app_onboarding',
         sessionInfoVersion: '3'
       }
