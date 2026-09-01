@@ -10,7 +10,6 @@ let authorizationCode;
 let sessionInfo;
 let onboardingFinished = false;
 let resultSent = false;
-let sendTimer;
 
 function setStatus(message) {
   statusElement.textContent = message;
@@ -28,32 +27,44 @@ function isTrustedMetaOrigin(origin) {
 
 function parseEmbeddedSignupMessage(data) {
   if (typeof data === 'string') {
-    try { return JSON.parse(data); } catch { return null; }
+    try {
+      return JSON.parse(data);
+    } catch {
+      return null;
+    }
   }
+
   return data && typeof data === 'object' ? data : null;
+}
+
+function getSessionInfo(message) {
+  if (!message || typeof message !== 'object') return undefined;
+  if (message.data && typeof message.data === 'object') return message.data;
+  return undefined;
 }
 
 function buildPayload() {
   const payload = {
     source: 'meta_whatsapp_embedded_signup',
-    status: 'success'
+    status: 'success',
+    code: authorizationCode
   };
 
-  if (authorizationCode) payload.code = authorizationCode;
   if (sessionInfo && typeof sessionInfo === 'object') {
     if (sessionInfo.waba_id) payload.waba_id = sessionInfo.waba_id;
     if (sessionInfo.phone_number_id) payload.phone_number_id = sessionInfo.phone_number_id;
     if (sessionInfo.business_id) payload.business_id = sessionInfo.business_id;
     payload.session_info = sessionInfo;
   }
+
   return payload;
 }
 
 async function sendResultToN8n() {
-  if (resultSent || (!authorizationCode && !sessionInfo)) return;
+  if (resultSent || !authorizationCode || !onboardingFinished) return;
+
   resultSent = true;
-  clearTimeout(sendTimer);
-  setStatus('Collegamento in corso...');
+  setStatus('Salvataggio configurazione...');
 
   try {
     if (!N8N_CALLBACK_URL.startsWith('https://')) {
@@ -66,42 +77,51 @@ async function sendResultToN8n() {
       body: JSON.stringify(buildPayload())
     });
 
-    if (!response.ok) throw new Error('Risposta webhook non valida');
+    if (!response.ok) {
+      throw new Error('Risposta webhook non valida');
+    }
+
     setStatus('✅ WhatsApp collegato correttamente');
   } catch {
+    resultSent = false;
     setStatus('Il collegamento Meta è stato completato, ma non siamo riusciti a salvare la configurazione.');
   } finally {
-    authorizationCode = undefined;
-    sessionInfo = undefined;
     button.disabled = false;
   }
 }
 
-function scheduleResultSend() {
-  clearTimeout(sendTimer);
-  if (authorizationCode && onboardingFinished) {
+function trySendCompletedResult() {
+  if (authorizationCode && onboardingFinished && !resultSent) {
     void sendResultToN8n();
-  } else {
-    sendTimer = setTimeout(() => void sendResultToN8n(), 1500);
   }
 }
 
 window.addEventListener('message', (event) => {
   if (!isTrustedMetaOrigin(event.origin)) return;
+
   const message = parseEmbeddedSignupMessage(event.data);
   if (!message || message.type !== 'WA_EMBEDDED_SIGNUP') return;
 
-  if (message.event === 'FINISH') {
+  const finishEvents = new Set([
+    'FINISH',
+    'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING'
+  ]);
+
+  if (finishEvents.has(message.event)) {
     onboardingFinished = true;
-    sessionInfo = message.data && typeof message.data === 'object' ? message.data : undefined;
-    setStatus('Collegamento completato');
-    scheduleResultSend();
-  } else if (message.event === 'CANCEL') {
-    clearTimeout(sendTimer);
+    sessionInfo = getSessionInfo(message);
+    setStatus('Configurazione WhatsApp completata. Salvataggio...');
+    trySendCompletedResult();
+    return;
+  }
+
+  if (message.event === 'CANCEL') {
     setStatus('Collegamento annullato');
     button.disabled = false;
-  } else if (message.event === 'ERROR') {
-    clearTimeout(sendTimer);
+    return;
+  }
+
+  if (message.event === 'ERROR') {
     setStatus('Errore durante il collegamento');
     button.disabled = false;
   }
@@ -115,6 +135,7 @@ window.fbAsyncInit = function () {
       xfbml: false,
       version: GRAPH_API_VERSION
     });
+
     button.disabled = false;
     setStatus('Pronto');
   } catch {
@@ -125,6 +146,7 @@ window.fbAsyncInit = function () {
 button.addEventListener('click', () => {
   button.disabled = true;
   setStatus('Apertura Meta...');
+
   authorizationCode = undefined;
   sessionInfo = undefined;
   onboardingFinished = false;
@@ -134,8 +156,14 @@ button.addEventListener('click', () => {
     FB.login((response) => {
       if (response.authResponse && response.authResponse.code) {
         authorizationCode = response.authResponse.code;
-        setStatus('Collegamento in corso...');
-        scheduleResultSend();
+
+        if (onboardingFinished) {
+          setStatus('Configurazione WhatsApp completata. Salvataggio...');
+        } else {
+          setStatus('Autorizzazione ricevuta. Completa la configurazione WhatsApp...');
+        }
+
+        trySendCompletedResult();
       } else {
         setStatus('Collegamento annullato');
         button.disabled = false;
@@ -157,13 +185,16 @@ button.addEventListener('click', () => {
 
 (function loadFacebookSdk(documentObject, tagName, id) {
   if (documentObject.getElementById(id)) return;
+
   const firstScript = documentObject.getElementsByTagName(tagName)[0];
   const sdkScript = documentObject.createElement(tagName);
+
   sdkScript.id = id;
   sdkScript.src = 'https://connect.facebook.net/it_IT/sdk.js';
   sdkScript.async = true;
   sdkScript.defer = true;
   sdkScript.crossOrigin = 'anonymous';
   sdkScript.onerror = () => setStatus('Errore durante il collegamento');
+
   firstScript.parentNode.insertBefore(sdkScript, firstScript);
 })(document, 'script', 'facebook-jssdk');
