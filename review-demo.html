@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Demo tecnica per la revisione Meta delle autorizzazioni WhatsApp Business.">
+    <title>Evolution Media – Meta App Review Demo</title>
+    <link rel="stylesheet" href="review-demo.css">
+    <script src="review-demo.js?v=1" defer></script>
+  </head>
+  <body>
+    <main class="shell" aria-labelledby="page-title">
+      <header class="hero">
+        <span class="eyebrow">EVOLUTION MEDIA · META APP REVIEW</span>
+        <h1 id="page-title">WhatsApp Business Integration Demo</h1>
+        <p>
+          Questa pagina dimostra, tramite l'infrastruttura server di Evolution Media,
+          le funzioni richieste per la revisione delle autorizzazioni Meta.
+        </p>
+      </header>
+
+      <section class="notice" aria-label="Informazioni di sicurezza">
+        <strong>Sicurezza:</strong> nessun access token, App Secret o credenziale Meta viene mostrato nel browser.
+        Le chiamate vengono eseguite lato server tramite n8n.
+      </section>
+
+      <section class="grid">
+        <article class="demo-card">
+          <div class="step">1</div>
+          <h2>Business Portfolio</h2>
+          <p>
+            Verifica l'accesso ai Business Portfolio autorizzati dal cliente.
+          </p>
+          <code>business_management</code>
+          <button type="button" data-action="businesses">VERIFICA BUSINESS PORTFOLIO</button>
+          <pre id="result-businesses" class="result" aria-live="polite">In attesa del test.</pre>
+        </article>
+
+        <article class="demo-card">
+          <div class="step">2</div>
+          <h2>WhatsApp Business Account</h2>
+          <p>
+            Verifica l'accesso al WABA e ai numeri WhatsApp Business autorizzati.
+          </p>
+          <code>whatsapp_business_management</code>
+          <button type="button" data-action="whatsapp-account">VERIFICA ACCOUNT WHATSAPP</button>
+          <pre id="result-whatsapp-account" class="result" aria-live="polite">In attesa del test.</pre>
+        </article>
+
+        <article class="demo-card">
+          <div class="step">3</div>
+          <h2>Messaggio WhatsApp</h2>
+          <p>
+            Esegue un invio di prova tramite WhatsApp Cloud API usando un template Meta approvato.
+          </p>
+          <code>whatsapp_business_messaging</code>
+          <button type="button" data-action="send-test">INVIA MESSAGGIO DI PROVA</button>
+          <pre id="result-send-test" class="result" aria-live="polite">In attesa del test.</pre>
+        </article>
+      </section>
+
+      <footer>
+        Demo predisposta esclusivamente per la revisione dell'app Meta di Evolution Media.
+      </footer>
+    </main>
+  </body>
+</html>
