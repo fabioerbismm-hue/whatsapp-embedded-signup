@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Evolution Media business_management permission review demo.">
+    <title>Evolution Media – Business Portfolio Access</title>
+    <link rel="stylesheet" href="business-management-review.css">
+    <script src="business-management-review.js?v=1" defer></script>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="card" aria-labelledby="page-title">
+        <div class="brand">EVOLUTION MEDIA</div>
+        <div class="review-badge">META APP REVIEW · business_management</div>
+
+        <h1 id="page-title">Connect your Meta Business Portfolio</h1>
+        <p class="intro">
+          Sign in with Facebook and authorize Evolution Media to access the Business Portfolios
+          you manage. This access is used only for business resources explicitly authorized by you.
+        </p>
+
+        <section class="steps" aria-label="Review flow">
+          <div class="step active" id="step-login">
+            <span>1</span>
+            <div>
+              <strong>Meta Login</strong>
+              <small>Authenticate with Facebook</small>
+            </div>
+          </div>
+
+          <div class="step" id="step-permission">
+            <span>2</span>
+            <div>
+              <strong>Grant access</strong>
+              <small>Authorize business_management</small>
+            </div>
+          </div>
+
+          <div class="step" id="step-businesses">
+            <span>3</span>
+            <div>
+              <strong>Business Portfolios</strong>
+              <small>Display authorized business resources</small>
+            </div>
+          </div>
+        </section>
+
+        <button id="login-button" type="button" disabled>CONTINUE WITH FACEBOOK</button>
+
+        <p id="status" class="status" role="status" aria-live="polite">Loading Meta SDK…</p>
+
+        <section id="result-panel" class="result-panel" hidden>
+          <div class="success-header">
+            <span class="success-icon">✓</span>
+            <div>
+              <h2>Access granted</h2>
+              <p><code>business_management</code> is authorized for this session.</p>
+            </div>
+          </div>
+
+          <div class="permission-row">
+            <span>Permission</span>
+            <strong id="permission-status">Checking…</strong>
+          </div>
+
+          <div class="businesses">
+            <div class="businesses-heading">
+              <h3>Authorized Business Portfolios</h3>
+              <span id="business-count"></span>
+            </div>
+            <div id="business-list" class="business-list"></div>
+          </div>
+        </section>
+
+        <p class="privacy-note">
+          No App Secret is stored in this page. The temporary Facebook access token is used only
+          in browser memory for this review session and is never displayed or saved.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>
